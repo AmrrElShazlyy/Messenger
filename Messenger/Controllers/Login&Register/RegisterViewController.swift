@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import FirebaseAuth
 
 class RegisterViewController: UIViewController {
     
@@ -20,15 +21,12 @@ class RegisterViewController: UIViewController {
     
     let imageView: UIImageView = {
         let imageView = UIImageView()
-        imageView.image = UIImage(systemName: "person")
+        imageView.image = UIImage(systemName: "person.circle")
         imageView.tintColor = .gray
         imageView.contentMode = .scaleAspectFit
         imageView.layer.masksToBounds = true
-        imageView.layer.borderWidth = 2
-        imageView.layer.borderColor = UIColor.lightGray.cgColor
         return imageView
     }()
-    
     
     let firstNameField: UITextField = {
         let textField = UITextField()
@@ -99,7 +97,7 @@ class RegisterViewController: UIViewController {
         return textField
     }()
     
-    private let registerButtontton: UIButton = {
+    private let registerButton: UIButton = {
         let button = UIButton()
         button.setTitle("Register", for: .normal)
         button.backgroundColor = .systemGreen
@@ -128,15 +126,14 @@ class RegisterViewController: UIViewController {
         lastNameField.frame = CGRect(x: 30, y: firstNameField.bottom + 10, width: scrollView.width - 60, height: 52)
         emailField.frame = CGRect(x: 30, y: lastNameField.bottom + 10, width: scrollView.width - 60, height: 52)
         passwordField.frame = CGRect(x: 30, y: emailField.bottom + 10, width: scrollView.width - 60, height: 52)
-        registerButtontton.frame = CGRect(x: 30, y: passwordField.bottom + 10, width: scrollView.width - 60, height: 52)
+        registerButton.frame = CGRect(x: 30, y: passwordField.bottom + 10, width: scrollView.width - 60, height: 52)
     }
     
     // MARK: Methods
     func setupUI(){
         title = "Log In"
         view.backgroundColor = .white
-        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Register", style: .done, target: self, action: #selector(didTapRegister))
-        registerButtontton.addTarget(self, action: #selector(didTapregisterButtontton), for: .touchUpInside)
+        registerButton.addTarget(self, action: #selector(didTapregisterButtontton), for: .touchUpInside)
         
         emailField.delegate = self
         passwordField.delegate = self
@@ -147,7 +144,7 @@ class RegisterViewController: UIViewController {
         scrollView.addSubview(lastNameField)
         scrollView.addSubview(emailField)
         scrollView.addSubview(passwordField)
-        scrollView.addSubview(registerButtontton)
+        scrollView.addSubview(registerButton)
         
         imageView.isUserInteractionEnabled = true
         scrollView.isUserInteractionEnabled = true
@@ -156,26 +153,38 @@ class RegisterViewController: UIViewController {
         imageView.addGestureRecognizer(gesture)
     }
     
-    @objc private func didTapRegister() {
-        navigateToRegisterVC()
-    }
-    private func navigateToRegisterVC(){
-        let vc = RegisterViewController()
-        vc.title = "Create Account"
-        navigationController?.navigationBar.backgroundColor = .white
-        navigationController?.pushViewController(vc, animated: true)
-    }
-    
     @objc private func didTapregisterButtontton(){
         firstNameField.resignFirstResponder()
         lastNameField.resignFirstResponder()
         emailField.resignFirstResponder()
         passwordField.resignFirstResponder()
-        guard let firstname = firstNameField.text,let lastname = lastNameField.text , let email = emailField.text , let password = passwordField.text ,!firstname.isEmpty , !lastname.isEmpty , !email.isEmpty , !password.isEmpty , password.count >= 6 else {
+        print("%%%%% clicked %%%%%%")
+        personalInfoAuth(firstname: firstNameField.text, lastname: lastNameField.text, email: emailField.text, password: passwordField.text)
+    }
+    
+    func personalInfoAuth(firstname: String?, lastname: String?, email: String?, password: String?) -> Void {
+        guard  let firstname = firstname,
+              let lastname = lastname,
+              let email = email,
+              let password = password,
+               !firstname.isEmpty,
+               !lastname.isEmpty,
+               !email.isEmpty,
+               !password.isEmpty,
+               password.count >= 6 else {
             alertuserLoginError()
             return
         }
+        Auth.auth().createUser(withEmail: email, password: password) { [weak self] result, error in
+            guard let self, let result , error == nil else {
+                print("failed to sign up with \(email) due to \(String(describing: error))")
+                return
+            }
+            print("signed up with \(String(describing: result.user.email))")
+            self.navigationController?.dismiss(animated: true)
+        }
     }
+    
     func alertuserLoginError() {
         let alert = UIAlertController(title: "Error", message: "Please Enter All Info To Register", preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "Dismiss", style: .cancel))
@@ -252,6 +261,6 @@ extension RegisterViewController: UIImagePickerControllerDelegate, UINavigationC
     }
     
     func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-        
+        picker.dismiss(animated: true)
     }
 }
