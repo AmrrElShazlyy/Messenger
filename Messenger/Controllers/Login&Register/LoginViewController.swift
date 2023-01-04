@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import FirebaseAuth
 
 class LoginViewController: UIViewController {
 
@@ -20,7 +21,7 @@ class LoginViewController: UIViewController {
     
     let imageView: UIImageView = {
         let imageView = UIImageView()
-        imageView.image = UIImage(named: "logo")
+        imageView.image = UIImage(named: "appIcon")
         imageView.contentMode = .scaleAspectFit
         return imageView
     }()
@@ -33,7 +34,7 @@ class LoginViewController: UIViewController {
         textField.layer.cornerRadius = 12
         textField.layer.borderWidth = 1
         textField.layer.borderColor = UIColor.lightGray.cgColor
-        textField.placeholder = "Email Address..."
+        textField.placeholder = "Email Address"
         textField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 5, height: 0))
         textField.leftViewMode = .always
         textField.rightView = UIView(frame: CGRect(x: 0, y: 0, width: 5, height: 0))
@@ -68,6 +69,8 @@ class LoginViewController: UIViewController {
         button.layer.cornerRadius = 12
         button.layer.masksToBounds = true
         button.titleLabel?.font = .systemFont(ofSize: 20, weight: .bold)
+        button.isEnabled = false
+        button.alpha = 0.5
         return button
     }()
     
@@ -98,6 +101,9 @@ class LoginViewController: UIViewController {
 
         emailField.delegate = self
         passwordField.delegate = self
+        emailField.addTarget(self, action: #selector(textFieldDidChange), for: .editingChanged)
+        passwordField.addTarget(self, action: #selector(textFieldDidChange), for: .editingChanged)
+        
         // Add Subviews
         view.addSubview(scrollView)
         scrollView.addSubview(imageView)
@@ -119,15 +125,39 @@ class LoginViewController: UIViewController {
     @objc private func didTapLoginButton(){
         emailField.resignFirstResponder()
         passwordField.resignFirstResponder()
-        guard let email = emailField.text , let password = passwordField.text , !email.isEmpty , !password.isEmpty , password.count >= 6 else {
+        print("login clicked")
+        loginWithEmailAndPassword(email: emailField.text, password: passwordField.text)
+    }
+    
+    func loginWithEmailAndPassword(email: String?, password: String?) {
+        guard let email = email , let password = password , !email.isEmpty , !password.isEmpty , password.count >= 6 else {
             alertuserLoginError()
             return
         }
+        Auth.auth().signIn(withEmail: email, password: password) { [weak self] result, error in
+            guard let self, let result, error == nil else {
+                print("failed to login with \(email) due to \(String(describing: error))")
+                return
+            }
+            print("\(result), logged in with \(email)")
+            self.navigationController?.dismiss(animated: true)
+        }
     }
+    
     func alertuserLoginError() {
         let alert = UIAlertController(title: "Invalid Inputs", message: "Please Enter All Info To Log In", preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "Dismiss", style: .cancel))
         present(alert, animated: true)
+    }
+    
+    @objc func textFieldDidChange() {
+        if !(emailField.text?.isEmpty ?? true) && (passwordField.text?.count ?? 0) <= 6 {
+            loginButton.isEnabled = false
+            loginButton.alpha = 0.5
+        } else {
+            loginButton.isEnabled = true
+            loginButton.alpha = 1
+        }
     }
 
 }
