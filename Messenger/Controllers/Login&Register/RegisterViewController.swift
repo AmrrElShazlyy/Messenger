@@ -29,6 +29,7 @@ class RegisterViewController: UIViewController {
         return imageView
     }()
     
+    
     let firstNameField: UITextField = {
         let textField = UITextField()
         textField.autocapitalizationType = .none
